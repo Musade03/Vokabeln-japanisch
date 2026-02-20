@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Japanisch A1a – Vokabeltrainer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f0f13;
+    color: #e8e6e3;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .app { max-width: 540px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* Header */
+  .header { text-align: center; padding: 20px 0 12px; }
+  .header h1 { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .header .sub { font-size: 0.8rem; color: #888; }
+
+  /* Category selector */
+  .cat-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; scrollbar-width: none; -ms-overflow-style: none; }
+  .cat-scroll::-webkit-scrollbar { display: none; }
+  .cat-btn {
+    flex-shrink: 0; padding: 7px 14px; border-radius: 20px; border: 1px solid #2a2a35;
+    background: #1a1a24; color: #aaa; font-size: 0.78rem; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap; font-family: 'Inter', sans-serif;
+  }
+  .cat-btn:hover { border-color: #e74c6f; color: #e74c6f; }
+  .cat-btn.active { background: #e74c6f; border-color: #e74c6f; color: #fff; }
+
+  /* Mode tabs */
+  .mode-tabs { display: flex; gap: 6px; justify-content: center; margin: 10px 0 14px; }
+  .mode-tab {
+    padding: 6px 16px; border-radius: 8px; border: none; background: #1a1a24;
+    color: #888; font-size: 0.78rem; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s;
+  }
+  .mode-tab.active { background: #2a2a3a; color: #fff; }
+
+  /* Stats bar */
+  .stats {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; background: #1a1a24; border-radius: 12px; margin-bottom: 14px;
+    font-size: 0.8rem;
+  }
+  .stats .progress-wrap { flex: 1; margin: 0 16px; }
+  .progress-bar { height: 6px; background: #2a2a35; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #e74c6f, #f59e0b); border-radius: 3px; transition: width 0.4s ease; }
+  .stat-num { font-weight: 700; color: #fff; }
+  .stat-label { color: #666; font-size: 0.7rem; }
+
+  /* Flashcard */
+  .card-container { flex: 1; display: flex; align-items: center; justify-content: center; perspective: 1000px; padding: 10px 0; }
+  .card-wrapper { width: 100%; max-width: 420px; aspect-ratio: 3/2; position: relative; }
+
+  .card {
+    width: 100%; height: 100%; position: relative;
+    transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute; width: 100%; height: 100%;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 20px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 24px;
+    border: 1px solid #2a2a35;
+  }
+
+  .card-front {
+    background: linear-gradient(145deg, #1e1e2e, #16162a);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .card-back {
+    background: linear-gradient(145deg, #1a2e1e, #162a1e);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: rotateY(180deg);
+  }
+
+  .card-label { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .card-jp { font-family: 'Noto Sans JP', sans-serif; font-size: 2.4rem; font-weight: 700; color: #fff; text-align: center; line-height: 1.3; }
+  .card-romaji { font-size: 1rem; color: #e74c6f; margin-top: 8px; }
+  .card-de { font-size: 1.8rem; font-weight: 600; color: #4ade80; text-align: center; }
+  .card-de-small { font-size: 0.9rem; color: #88c090; margin-top: 6px; }
+  .tap-hint { font-size: 0.7rem; color: #444; position: absolute; bottom: 16px; }
+
+  /* Direction indicator */
+  .direction-info { text-align: center; font-size: 0.72rem; color: #555; margin-bottom: 6px; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 12px; padding: 16px 0 24px; justify-content: center; }
+  .btn {
+    flex: 1; max-width: 180px; padding: 14px 20px; border-radius: 14px; border: none;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-again { background: #3a1a24; color: #f87171; }
+  .btn-again:hover { background: #4a2030; }
+  .btn-good { background: #1a3a24; color: #4ade80; }
+  .btn-good:hover { background: #204a2e; }
+  .btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* Done screen */
+  .done-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .done-emoji { font-size: 3rem; margin-bottom: 16px; }
+  .done-title { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .done-text { color: #888; font-size: 0.9rem; margin-bottom: 6px; }
+  .done-stats { display: flex; gap: 24px; margin: 20px 0; }
+  .done-stat { text-align: center; }
+  .done-stat .num { font-size: 2rem; font-weight: 700; }
+  .done-stat .lbl { font-size: 0.75rem; color: #888; }
+  .btn-restart {
+    margin-top: 16px; padding: 12px 32px; border-radius: 12px; border: none;
+    background: #e74c6f; color: #fff; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .btn-restart:hover { background: #d43d60; }
+  .btn-restart-sec {
+    margin-top: 10px; padding: 10px 28px; border-radius: 12px; border: 1px solid #2a2a35;
+    background: transparent; color: #aaa; font-size: 0.82rem; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Keyboard shortcuts hint */
+  .shortcuts { text-align: center; font-size: 0.68rem; color: #444; padding-bottom: 12px; }
+  .shortcuts kbd { background: #1a1a24; padding: 2px 6px; border-radius: 4px; border: 1px solid #2a2a35; margin: 0 2px; }
+
+  /* Shuffle indicator */
+  .shuffle-toggle {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 0.75rem; color: #666; margin-bottom: 8px; cursor: pointer; user-select: none;
+  }
+  .shuffle-toggle input { accent-color: #e74c6f; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+const VOCAB = {
+  "Personen & Berufe": [
+    {jp:"べんごし",rm:"bengoshi",de:"Rechtsanwalt"},
+    {jp:"ひしょ",rm:"hisho",de:"Sekretär/in"},
+    {jp:"がくせい",rm:"gakusei",de:"Student/in"},
+    {jp:"かいしゃいん",rm:"kaishain",de:"Firmenangestellte/r"},
+    {jp:"ぎんこういん",rm:"ginkôin",de:"Bankangestellte/r"},
+    {jp:"たいし",rm:"taishi",de:"Botschafter"},
+    {jp:"せんせい",rm:"sensei",de:"Lehrer/in"},
+    {jp:"てんいん",rm:"ten'in",de:"Verkäufer/in"},
+    {jp:"ともだち",rm:"tomodachi",de:"Freund/in"},
+    {jp:"おとこのひと",rm:"otoko no hito",de:"Mann"},
+    {jp:"おんなのひと",rm:"onna no hito",de:"Frau"},
+    {jp:"わたし",rm:"watashi",de:"ich"},
+    {jp:"あなた",rm:"anata",de:"Sie / du"},
+    {jp:"こちら",rm:"kochira",de:"diese Person hier (höflich)"},
+  ],
+  "Länder & Nationalitäten": [
+    {jp:"にほん",rm:"Nihon",de:"Japan"},
+    {jp:"ドイツ",rm:"Doitsu",de:"Deutschland"},
+    {jp:"ちゅうごく",rm:"Chûgoku",de:"China"},
+    {jp:"アメリカ",rm:"Amerika",de:"Amerika"},
+    {jp:"イギリス",rm:"Igirisu",de:"England"},
+    {jp:"フランス",rm:"Furansu",de:"Frankreich"},
+    {jp:"イタリア",rm:"Itaria",de:"Italien"},
+    {jp:"かんこく",rm:"Kankoku",de:"Südkorea"},
+    {jp:"にほんじん",rm:"Nihon-jin",de:"Japaner/in"},
+    {jp:"ドイツじん",rm:"Doitsu-jin",de:"Deutsche/r"},
+    {jp:"ちゅうごくじん",rm:"Chûgoku-jin",de:"Chinese/Chinesin"},
+    {jp:"アメリカじん",rm:"Amerika-jin",de:"Amerikaner/in"},
+    {jp:"イギリスじん",rm:"Igirisu-jin",de:"Engländer/in"},
+    {jp:"フランスじん",rm:"Furansu-jin",de:"Franzose/Französin"},
+    {jp:"イタリアじん",rm:"Itaria-jin",de:"Italiener/in"},
+    {jp:"かんこくじん",rm:"Kankoku-jin",de:"Südkoreaner/in"},
+  ],
+  "Sprachen": [
+    {jp:"にほんご",rm:"Nihon-go",de:"Japanisch"},
+    {jp:"ドイツご",rm:"Doitsu-go",de:"Deutsch"},
+    {jp:"えいご",rm:"Eigo",de:"Englisch"},
+    {jp:"フランスご",rm:"Furansu-go",de:"Französisch"},
+    {jp:"ちゅうごくご",rm:"Chûgoku-go",de:"Chinesisch"},
+    {jp:"イタリアご",rm:"Itaria-go",de:"Italienisch"},
+    {jp:"かんこくご",rm:"Kankoku-go",de:"Koreanisch"},
+  ],
+  "Gegenstände": [
+    {jp:"めいし",rm:"meishi",de:"Visitenkarte"},
+    {jp:"ほん",rm:"hon",de:"Buch"},
+    {jp:"しんぶん",rm:"shinbun",de:"Zeitung"},
+    {jp:"ざっし",rm:"zasshi",de:"Zeitschrift"},
+    {jp:"とけい",rm:"tokei",de:"Uhr"},
+    {jp:"かぎ",rm:"kagi",de:"Schlüssel"},
+    {jp:"でんわ",rm:"denwa",de:"Telefon"},
+    {jp:"くるま",rm:"kuruma",de:"Auto"},
+    {jp:"スマホ",rm:"sumaho",de:"Smartphone"},
+    {jp:"ペン",rm:"pen",de:"Stift"},
+    {jp:"かさ",rm:"kasa",de:"Regenschirm"},
+    {jp:"かばん",rm:"kaban",de:"Tasche"},
+    {jp:"テレビ",rm:"terebi",de:"Fernseher"},
+    {jp:"ラジオ",rm:"rajio",de:"Radio"},
+    {jp:"カメラ",rm:"kamera",de:"Kamera"},
+    {jp:"はいざら",rm:"haizara",de:"Aschenbecher"},
+    {jp:"レシート",rm:"reshîto",de:"Quittung"},
+    {jp:"きって",rm:"kitte",de:"Briefmarke"},
+    {jp:"はがき",rm:"hagaki",de:"Postkarte"},
+    {jp:"セーター",rm:"sêtâ",de:"Pullover"},
+    {jp:"バナナ",rm:"banana",de:"Banane"},
+    {jp:"りんご",rm:"ringo",de:"Apfel"},
+    {jp:"みかん",rm:"mikan",de:"Mandarine"},
+    {jp:"みず",rm:"mizu",de:"Wasser"},
+    {jp:"コーヒー",rm:"kôhî",de:"Kaffee"},
+    {jp:"おちゃ",rm:"o-cha",de:"Tee"},
+    {jp:"ビール",rm:"bîru",de:"Bier"},
+    {jp:"ジュース",rm:"jûsu",de:"Saft"},
+    {jp:"ワイン",rm:"wain",de:"Wein"},
+    {jp:"ポスト",rm:"posuto",de:"Briefkasten"},
+    {jp:"バス",rm:"basu",de:"Bus"},
+    {jp:"ひこうき",rm:"hikôki",de:"Flugzeug"},
+    {jp:"タクシー",rm:"takushî",de:"Taxi"},
+    {jp:"テーブル",rm:"têburu",de:"Tisch"},
+    {jp:"でんち",rm:"denchi",de:"Batterie"},
+    {jp:"フィルム",rm:"fuirumu",de:"Film (Kamera)"},
+    {jp:"テープ",rm:"têpu",de:"Kassette"},
+  ],
+  "Gebäude & Orte": [
+    {jp:"かいしゃ",rm:"kaisha",de:"Firma"},
+    {jp:"がっこう",rm:"gakkô",de:"Schule"},
+    {jp:"だいがく",rm:"daigaku",de:"Universität"},
+    {jp:"うち",rm:"uchi",de:"Zuhause / Haus"},
+    {jp:"たいしかん",rm:"taishikan",de:"Botschaft"},
+    {jp:"ぎんこう",rm:"ginkô",de:"Bank"},
+    {jp:"ゆうびんきょく",rm:"yûbinkyoku",de:"Postamt"},
+    {jp:"デパート",rm:"depâto",de:"Kaufhaus"},
+    {jp:"きっさてん",rm:"kissaten",de:"Café"},
+    {jp:"えき",rm:"eki",de:"Bahnhof"},
+    {jp:"くうこう",rm:"kûkô",de:"Flughafen"},
+    {jp:"ししゃ",rm:"shisha",de:"Niederlassung"},
+    {jp:"ホテル",rm:"hoteru",de:"Hotel"},
+    {jp:"レストラン",rm:"resutoran",de:"Restaurant"},
+    {jp:"スーパー",rm:"sûpâ",de:"Supermarkt"},
+    {jp:"カメラや",rm:"kamera-ya",de:"Kameraladen"},
+    {jp:"はなや",rm:"hana-ya",de:"Blumenladen"},
+    {jp:"さかなや",rm:"sakana-ya",de:"Fischladen"},
+    {jp:"ほんや",rm:"hon-ya",de:"Buchladen"},
+  ],
+  "Zeitangaben": [
+    {jp:"いま",rm:"ima",de:"jetzt"},
+    {jp:"きょう",rm:"kyô",de:"heute"},
+    {jp:"あした",rm:"ashita",de:"morgen"},
+    {jp:"あさって",rm:"asatte",de:"übermorgen"},
+    {jp:"きのう",rm:"kinô",de:"gestern"},
+    {jp:"おととい",rm:"ototoi",de:"vorgestern"},
+    {jp:"ひる",rm:"hiru",de:"Mittag"},
+    {jp:"ごぜん",rm:"gozen",de:"Vormittag / AM"},
+    {jp:"ごご",rm:"gogo",de:"Nachmittag / PM"},
+    {jp:"らいしゅう",rm:"raishû",de:"nächste Woche"},
+    {jp:"こんしゅう",rm:"konshû",de:"diese Woche"},
+    {jp:"せんしゅう",rm:"senshû",de:"letzte Woche"},
+    {jp:"しゅうまつ",rm:"shûmatsu",de:"Wochenende"},
+    {jp:"こんげつ",rm:"kongetsu",de:"dieser Monat"},
+  ],
+  "Wochentage": [
+    {jp:"にちようび",rm:"nichiyôbi",de:"Sonntag"},
+    {jp:"げつようび",rm:"getsuyôbi",de:"Montag"},
+    {jp:"かようび",rm:"kayôbi",de:"Dienstag"},
+    {jp:"すいようび",rm:"suiyôbi",de:"Mittwoch"},
+    {jp:"もくようび",rm:"mokuyôbi",de:"Donnerstag"},
+    {jp:"きんようび",rm:"kin'yôbi",de:"Freitag"},
+    {jp:"どようび",rm:"doyôbi",de:"Samstag"},
+  ],
+  "Monate": [
+    {jp:"いちがつ",rm:"ichi-gatsu",de:"Januar"},
+    {jp:"にがつ",rm:"ni-gatsu",de:"Februar"},
+    {jp:"さんがつ",rm:"san-gatsu",de:"März"},
+    {jp:"しがつ",rm:"shi-gatsu",de:"April"},
+    {jp:"ごがつ",rm:"go-gatsu",de:"Mai"},
+    {jp:"ろくがつ",rm:"roku-gatsu",de:"Juni"},
+    {jp:"しちがつ",rm:"shichi-gatsu",de:"Juli"},
+    {jp:"はちがつ",rm:"hachi-gatsu",de:"August"},
+    {jp:"くがつ",rm:"ku-gatsu",de:"September"},
+    {jp:"じゅうがつ",rm:"jû-gatsu",de:"Oktober"},
+    {jp:"じゅういちがつ",rm:"jûichi-gatsu",de:"November"},
+    {jp:"じゅうにがつ",rm:"jûni-gatsu",de:"Dezember"},
+  ],
+  "Verben": [
+    {jp:"です",rm:"desu",de:"sein (Kopula)"},
+    {jp:"でした",rm:"deshita",de:"war (Verg. von desu)"},
+    {jp:"ではありません",rm:"de wa arimasen",de:"ist nicht (Neg. von desu)"},
+    {jp:"します",rm:"shimasu",de:"machen, tun"},
+    {jp:"ください",rm:"kudasai",de:"bitte geben Sie"},
+    {jp:"いきます",rm:"ikimasu",de:"(hin)gehen, fahren"},
+    {jp:"きます",rm:"kimasu",de:"kommen"},
+    {jp:"かえります",rm:"kaerimasu",de:"zurückkehren"},
+  ],
+  "Fragewörter": [
+    {jp:"どなた",rm:"donata",de:"Wer? (höflich)"},
+    {jp:"だれ",rm:"dare",de:"Wer?"},
+    {jp:"だれの",rm:"dare no",de:"Wessen?"},
+    {jp:"なん / なに",rm:"nan / nani",de:"Was?"},
+    {jp:"なんばん",rm:"nan-ban",de:"Welche Nummer?"},
+    {jp:"なんじ",rm:"nan-ji",de:"Wie viel Uhr?"},
+    {jp:"どれ",rm:"dore",de:"Welches?"},
+    {jp:"どの",rm:"dono",de:"Welches? (vor Nomen)"},
+    {jp:"なんようび",rm:"nan-yôbi",de:"Welcher Wochentag?"},
+    {jp:"なんにち",rm:"nan-nichi",de:"Welcher Tag?"},
+    {jp:"なんがつ",rm:"nan-gatsu",de:"Welcher Monat?"},
+    {jp:"いつ",rm:"itsu",de:"Wann?"},
+    {jp:"いくら",rm:"ikura",de:"Wie viel? / Wie teuer?"},
+    {jp:"どこ",rm:"doko",de:"Wo?"},
+    {jp:"どこの",rm:"doko no",de:"Woher?"},
+    {jp:"どこに",rm:"doko ni",de:"Wohin?"},
+  ],
+  "Partikeln": [
+    {jp:"は",rm:"wa",de:"Themapartikel"},
+    {jp:"の",rm:"no",de:"Genitiv / Possessiv"},
+    {jp:"か",rm:"ka",de:"Fragepartikel"},
+    {jp:"から",rm:"kara",de:"von / ab"},
+    {jp:"まで",rm:"made",de:"bis"},
+    {jp:"も",rm:"mo",de:"auch"},
+    {jp:"を",rm:"o",de:"Akkusativ (Objekt)"},
+    {jp:"と",rm:"to",de:"und / mit"},
+    {jp:"に",rm:"ni",de:"Richtung (nach, zu, in)"},
+  ],
+  "Adjektive": [
+    {jp:"あかい",rm:"akai",de:"rot"},
+    {jp:"あおい",rm:"aoi",de:"blau"},
+    {jp:"くろい",rm:"kuroi",de:"schwarz"},
+    {jp:"おおきい",rm:"ôkii",de:"groß"},
+    {jp:"ちいさい",rm:"chiisai",de:"klein"},
+  ],
+  "Demonstrativpronomen": [
+    {jp:"これ",rm:"kore",de:"dieses hier"},
+    {jp:"それ",rm:"sore",de:"dieses dort (bei dir)"},
+    {jp:"あれ",rm:"are",de:"jenes dort drüben"},
+    {jp:"どれ",rm:"dore",de:"welches?"},
+    {jp:"この",rm:"kono",de:"dieser (+ Nomen)"},
+    {jp:"その",rm:"sono",de:"jener bei dir (+ Nomen)"},
+    {jp:"あの",rm:"ano",de:"jener dort (+ Nomen)"},
+    {jp:"どの",rm:"dono",de:"welcher? (+ Nomen)"},
+  ],
+  "Ausdrücke & Floskeln": [
+    {jp:"おはようございます",rm:"ohayô gozaimasu",de:"Guten Morgen"},
+    {jp:"こんにちは",rm:"kon'nichi wa",de:"Guten Tag"},
+    {jp:"こんばんは",rm:"konban wa",de:"Guten Abend"},
+    {jp:"おやすみなさい",rm:"oyasumi nasai",de:"Gute Nacht"},
+    {jp:"さようなら",rm:"sayônara",de:"Auf Wiedersehen"},
+    {jp:"じゃまた",rm:"jâ mata",de:"Bis dann"},
+    {jp:"ありがとうございます",rm:"arigatô gozaimasu",de:"Vielen Dank"},
+    {jp:"どういたしまして",rm:"dô itashimashite",de:"Bitte (Antwort auf Dank)"},
+    {jp:"すみません",rm:"sumimasen",de:"Entschuldigung"},
+    {jp:"はじめまして",rm:"hajimemashite",de:"Freut mich (erste Begegnung)"},
+    {jp:"どうぞよろしく",rm:"dôzo yoroshiku",de:"Freut mich, Sie kennenzulernen"},
+    {jp:"いらっしゃいませ",rm:"irasshaimase",de:"Willkommen! (Geschäft)"},
+    {jp:"ごしょうかいします",rm:"go-shôkai shimasu",de:"Darf ich vorstellen"},
+    {jp:"はい",rm:"hai",de:"Ja"},
+    {jp:"いいえ",rm:"iie",de:"Nein"},
+    {jp:"ええ",rm:"ee",de:"Ja (informell)"},
+    {jp:"そうです",rm:"sô desu",de:"Das stimmt"},
+    {jp:"どうぞ",rm:"dôzo",de:"Bitte (anbietend)"},
+  ],
+  "Tätigkeiten & Sonstiges": [
+    {jp:"しごと",rm:"shigoto",de:"Arbeit"},
+    {jp:"かいぎ",rm:"kaigi",de:"Besprechung"},
+    {jp:"えいが",rm:"eiga",de:"Film / Kino"},
+    {jp:"しゅっちょう",rm:"shutchô",de:"Geschäftsreise"},
+    {jp:"パーティー",rm:"pâtî",de:"Party"},
+    {jp:"ゴルフ",rm:"gorufu",de:"Golf"},
+    {jp:"テニス",rm:"tenisu",de:"Tennis"},
+    {jp:"べんきょう",rm:"benkyô",de:"Lernen / Studium"},
+    {jp:"ひるやすみ",rm:"hiru yasumi",de:"Mittagspause"},
+    {jp:"なつやすみ",rm:"natsu yasumi",de:"Sommerferien"},
+    {jp:"やすみ",rm:"yasumi",de:"Pause / Ferien"},
+    {jp:"たんじょうび",rm:"tanjôbi",de:"Geburtstag"},
+    {jp:"なまえ",rm:"namae",de:"Name"},
+    {jp:"じゅうしょ",rm:"jûsho",de:"Adresse"},
+    {jp:"でんわばんごう",rm:"denwa bangô",de:"Telefonnummer"},
+    {jp:"では",rm:"dewa",de:"dann / also"},
+    {jp:"それから",rm:"sorekara",de:"danach"},
+    {jp:"そして",rm:"soshite",de:"und dann"},
+    {jp:"いっしょに",rm:"isshoni",de:"zusammen"},
+    {jp:"ひとりで",rm:"hitori de",de:"allein"},
+    {jp:"おかあさん",rm:"okâsan",de:"Mutter"},
+    {jp:"おねえさん",rm:"onêsan",de:"ältere Schwester"},
+    {jp:"はん",rm:"han",de:"halb (Uhrzeit)"},
+    {jp:"~えん",rm:"~en",de:"Yen"},
+  ],
+};
+
+// State
+let currentCat = "Alle";
+let mode = "jp-de"; // jp-de or de-jp
+let shuffle = true;
+let deck = [];
+let currentIndex = 0;
+let flipped = false;
+let knownCount = 0;
+let againCount = 0;
+let againPile = [];
+let done = false;
+let reviewingAgain = false;
+
+function getAllVocab() {
+  let all = [];
+  for (const cat in VOCAB) all = all.concat(VOCAB[cat]);
+  return all;
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function buildDeck() {
+  let items = currentCat === "Alle" ? getAllVocab() : (VOCAB[currentCat] || []);
+  deck = shuffle ? shuffleArray(items) : [...items];
+  currentIndex = 0; flipped = false; knownCount = 0; againCount = 0; againPile = []; done = false; reviewingAgain = false;
+}
+
+function flipCard() { flipped = !flipped; render(); }
+
+function markKnown() {
+  if (!flipped) return;
+  knownCount++;
+  nextCard();
+}
+
+function markAgain() {
+  if (!flipped) return;
+  againCount++;
+  againPile.push(deck[currentIndex]);
+  nextCard();
+}
+
+function nextCard() {
+  currentIndex++;
+  flipped = false;
+  if (currentIndex >= deck.length) {
+    if (againPile.length > 0 && !reviewingAgain) {
+      reviewingAgain = true;
+      deck = shuffle ? shuffleArray(againPile) : [...againPile];
+      againPile = [];
+      currentIndex = 0;
+      againCount = 0;
+    } else if (againPile.length > 0 && reviewingAgain) {
+      deck = shuffle ? shuffleArray(againPile) : [...againPile];
+      againPile = [];
+      currentIndex = 0;
+      againCount = 0;
+    } else {
+      done = true;
+    }
+  }
+  render();
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const cats = ["Alle", ...Object.keys(VOCAB)];
+  const total = deck.length;
+  const progress = total > 0 ? ((currentIndex) / total * 100) : 0;
+  const current = deck[currentIndex];
+
+  let front, back, frontLabel, backLabel;
+  if (current) {
+    if (mode === "jp-de") {
+      front = current.jp; frontLabel = "Japanisch"; back = current.de; backLabel = "Deutsch";
+    } else {
+      front = current.de; frontLabel = "Deutsch"; back = current.jp; backLabel = "Japanisch";
+    }
+  }
+
+  if (done) {
+    const totalAnswered = knownCount + againCount;
+    app.innerHTML = `
+      <div class="header"><h1>Japanisch A1a Vokabeltrainer</h1></div>
+      <div class="done-screen">
+        <div class="done-emoji">🎉</div>
+        <div class="done-title">${reviewingAgain ? 'Wiederholung fertig!' : 'Geschafft!'}</div>
+        <div class="done-text">Alle Karten in "${currentCat}" durchgearbeitet</div>
+        <div class="done-stats">
+          <div class="done-stat"><div class="num" style="color:#4ade80">${knownCount}</div><div class="lbl">Gewusst</div></div>
+          <div class="done-stat"><div class="num" style="color:#f87171">${againCount}</div><div class="lbl">Nochmal</div></div>
+        </div>
+        <button class="btn-restart" onclick="buildDeck(); render();">Nochmal lernen</button>
+        <button class="btn-restart-sec" onclick="currentCat='Alle'; buildDeck(); render();">Alle Kategorien</button>
+      </div>
+    `;
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="header">
+      <h1>日本語 Vokabeltrainer</h1>
+      <div class="sub">A1a – Lektionen 1–6 · ${getAllVocab().length} Vokabeln</div>
+    </div>
+
+    <div class="cat-scroll">
+      ${cats.map(c => `<button class="cat-btn ${c===currentCat?'active':''}" onclick="currentCat='${c.replace(/'/g,"\\'")}'; buildDeck(); render();">${c}${c!=='Alle' ? ' ('+VOCAB[c].length+')' : ' ('+getAllVocab().length+')'}</button>`).join('')}
+    </div>
+
+    <div class="mode-tabs">
+      <button class="mode-tab ${mode==='jp-de'?'active':''}" onclick="mode='jp-de'; buildDeck(); render();">🇯🇵 → 🇩🇪</button>
+      <button class="mode-tab ${mode==='de-jp'?'active':''}" onclick="mode='de-jp'; buildDeck(); render();">🇩🇪 → 🇯🇵</button>
+    </div>
+
+    <label class="shuffle-toggle" onclick="event.stopPropagation();">
+      <input type="checkbox" ${shuffle?'checked':''} onchange="shuffle=this.checked; buildDeck(); render();"> Zufällige Reihenfolge
+    </label>
+
+    <div class="stats">
+      <div><span class="stat-num">${currentIndex + 1}</span> <span class="stat-label">/ ${total}</span></div>
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div></div>
+      <div><span class="stat-num" style="color:#4ade80">${knownCount}</span> <span class="stat-label">✓</span> &nbsp;<span class="stat-num" style="color:#f87171">${againCount}</span> <span class="stat-label">✗</span></div>
+    </div>
+
+    ${reviewingAgain ? '<div class="direction-info" style="color:#f59e0b;">🔁 Wiederholung der nicht gewussten Karten</div>' : ''}
+
+    <div class="card-container" onclick="flipCard()">
+      <div class="card-wrapper">
+        <div class="card ${flipped ? 'flipped' : ''}">
+          <div class="card-face card-front">
+            <div class="card-label">${frontLabel}</div>
+            <div class="card-jp" style="${mode==='de-jp'?'font-family:Inter,sans-serif;font-size:1.6rem;':''}">${front || ''}</div>
+            ${mode==='jp-de' && current ? '<div class="card-romaji">'+current.rm+'</div>' : ''}
+            <div class="tap-hint">Tippen zum Aufdecken</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-label">${backLabel}</div>
+            <div class="${mode==='jp-de'?'card-de':'card-jp'}">${back || ''}</div>
+            ${mode==='de-jp' && current ? '<div class="card-de-small">'+current.rm+'</div>' : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-again" ${!flipped?'disabled':''} onclick="event.stopPropagation(); markAgain();">✗ Nochmal</button>
+      <button class="btn btn-good" ${!flipped?'disabled':''} onclick="event.stopPropagation(); markKnown();">✓ Gewusst</button>
+    </div>
+
+    <div class="shortcuts">
+      <kbd>Leertaste</kbd> Aufdecken &nbsp; <kbd>←</kbd> Nochmal &nbsp; <kbd>→</kbd> Gewusst
+    </div>
+  `;
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (done) return;
+  if (e.code === 'Space') { e.preventDefault(); if (!flipped) flipCard(); }
+  if (e.code === 'ArrowRight' && flipped) markKnown();
+  if (e.code === 'ArrowLeft' && flipped) markAgain();
+});
+
+// Init
+buildDeck();
+render();
+</script>
+</body>
+</html>
